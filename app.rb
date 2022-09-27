@@ -23,7 +23,7 @@ ssl_expire_gauge = prometheus.gauge(:microk8s_ssl_expire_time_seconds,
                                     labels: [:nodename,:certificate])
 
 
-scheduler.every '10s' do
+scheduler.every '1m' do
   collect_microk8s_ssl_expire_time_seconds(ssl_expire_gauge)
 end
 
@@ -36,9 +36,7 @@ def collect_microk8s_ssl_expire_time_seconds(metric)
   CERTS_LIST.each do |cert|
     raw = File.read("#{CERTS_PATH}/#{cert}")
     certificate = OpenSSL::X509::Certificate.new(raw)
-    delta = ((certificate.not_after) - Time.now).to_f
-    value = delta < 0 ? 0.0 : delta
-    metric.set(value, labels: { nodename: ENV["NODE_NAME"], certificate: cert})
+    metric.set(certificate.not_after.to_f, labels: { nodename: ENV["NODE_NAME"], certificate: cert})
   end
 end
 

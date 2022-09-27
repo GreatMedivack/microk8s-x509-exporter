@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: microk8s-cert-exporter
+  name: microk8s-cert-exporter
+spec:
+  selector:
+    matchLabels:
+      app: microk8s-cert-exporter
+  template:
+    metadata:
+      name: microk8s-cert-exporter
+      labels:
+        app: microk8s-cert-exporter
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '9117'
+    spec:
+      containers:
+      - image: greatmedivack/microk8s-x509-exporter
+        imagePullPolicy: Always
+        env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+        name: microk8s-cert-exporter
+        ports:
+        - containerPort: 9117
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 250m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+        - mountPath: /app/certs
+          name: certs
+          readOnly: true
+      volumes:
+      - hostPath:
+          path: /var/snap/microk8s/current/certs
+          type: ""
+        name: certs
+  updateStrategy:
+    type: RollingUpdate
